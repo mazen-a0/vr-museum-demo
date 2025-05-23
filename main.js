@@ -1,46 +1,165 @@
-import { FreeCamera, Engine, Scene, Vector3, HemisphericLight, CreateSphere, CreateGround } from "@babylonjs/core"
+import {
+  FreeCamera,
+  Engine,
+  Scene,
+  Vector3,
+  HemisphericLight,
+  CreateSphere,
+  CreateGround,
+  SceneLoader
+} from "@babylonjs/core";
 
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader.js';
+import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader';
+import "@babylonjs/loaders/OBJ";
 
-// If you don't need the standard material you will still need to import it since the scene requires it.
-// @ts-ignore
+import "@babylonjs/loaders/glTF";            
+import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
+
+registerBuiltInLoaders();
+
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial.js";
 
 /** @type {HTMLCanvasElement} */
-const canvas = document.querySelector("#babylon-canvas")
+const canvas = document.querySelector("#babylon-canvas");
+const engine = new Engine(canvas, true);
+const scene = new Scene(engine);
 
-const engine = new Engine(canvas, true)
+const camera = new FreeCamera("museumCam", new Vector3(0, 2, -10), scene);
+camera.setTarget(new Vector3(0, 1, 0));
+camera.attachControl(canvas, true);
 
-// This creates a basic Babylon Scene object (non-mesh)
-const scene = new Scene(engine)
+//movement setup
+camera.keysUp.push(87);    
+camera.keysDown.push(83);  
+camera.keysLeft.push(65);  
+camera.keysRight.push(68); 
+camera.speed = 0.3;
+camera.angularSensibility = 500;
 
-// This creates and positions a free camera (non-mesh)
-const camera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene)
+// gravity and collision§
+camera.checkCollisions = true;
+camera.applyGravity = true;
+camera.ellipsoid = new Vector3(1, 1, 1);
+scene.gravity = new Vector3(0, -0.1, 0);
 
-// This targets the camera to scene origin
-camera.setTarget(Vector3.Zero())
+const light = new HemisphericLight("light", new Vector3(1, 1, 0), scene);
+light.intensity = 0.9;
 
-// This attaches the camera to the canvas
-camera.attachControl(canvas, true)
+const ground = CreateGround("museumFloor", { width: 50, height: 50 }, scene);
+ground.position.y = 0; // ensure it's at floor level
+ground.checkCollisions = true;
 
-// This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene)
+// Debug sphere ---
+const sphere = CreateSphere("debugSphere", { diameter: 2, segments: 32 }, scene);
+sphere.position = new Vector3(0, 1, 0);
+sphere.checkCollisions = true;
 
-// Default intensity is 1. Let's dim the light a small amount
-light.intensity = 0.7
+const dLoader
 
-// Our built-in 'sphere' shape.
-const sphere = CreateSphere("sphere", { diameter: 2, segments: 32 }, scene)
+console.log("Attempting to load model");
 
-// Move the sphere upward 1/2 its height
-sphere.position.y = 1
+SceneLoader.ImportMesh(
+  null,
+  "/assets/",
+  "building-test.obj",
+  scene,
+  (meshes, particleSystems, skeletons, animationGroups, transformNodes) => {
+    console.log("Model loaded!", meshes);
 
-// Our built-in 'ground' shape.
-CreateGround("ground", { width: 6, height: 6}, scene)
+    meshes.forEach(mesh => {
+      mesh.checkCollisions = true;
+      mesh.scaling = new Vector3(1, 1, 1);
+      mesh.position = new Vector3(0, 0, 0);
+      mesh.rotation = new Vector3(0, 0, 0);
+    });
+  },
+  null,
+  (scene, message, exception) => {
+    console.error("Load error:", message, exception);
+  }
+);
+
+// Load Osiris.obj
+SceneLoader.ImportMesh(
+  null,
+  "/assets/",
+  "Osiris.obj",
+  scene,
+  (meshes) => {
+    console.log("Osiris loaded", meshes);
+    meshes.forEach(mesh => {
+      mesh.checkCollisions = true;
+      mesh.scaling = new Vector3(1, 1, 1);
+      mesh.position = new Vector3(-10, 0, 0); // Position left of center
+    });
+  },
+  null,
+  (scene, message, exception) => {
+    console.error("Osiris load error:", message, exception);
+  }
+);
+
+// Load RM2352_merged.obj
+SceneLoader.ImportMesh(
+  null,
+  "/assets/",
+  "RM2352_merged.obj",
+  scene,
+  (meshes) => {
+    console.log("RM2352_merged loaded", meshes);
+    meshes.forEach(mesh => {
+      mesh.checkCollisions = true;
+      mesh.scaling = new Vector3(1, 1, 1);
+      mesh.position = new Vector3(10, 0, 0); // Position right of center
+    });
+  },
+  null,
+  (scene, message, exception) => {
+    console.error("RM2352_merged load error:", message, exception);
+  }
+);
+
+SceneLoader.ImportMesh(
+  null,
+  "/assets/",
+  "cube.glb",
+  scene,
+  (meshes) => {
+    console.log("RM2352_merged loaded", meshes);
+    meshes.forEach(mesh => {
+      mesh.checkCollisions = true;
+      mesh.scaling = new Vector3(1, 1, 1);
+      mesh.position = new Vector3(10, 0, 0); // Position right of center
+    });
+  },
+  null,
+  (scene, message, exception) => {
+    console.error("RM2352_merged load error:", message, exception);
+  }
+);
 
 window.addEventListener("resize", () => {
-    engine.resize()
-})
+  engine.resize();
+});
 
+//Render loop
 engine.runRenderLoop(() => {
-    scene.render()
-})
+  scene.render();
+});
+
+// Show debug UI
+scene.debugLayer.show();
+
+window.addEventListener("keydown", function (ev) {
+  if (ev.key === "d" || ev.key === "D") {
+    if (scene.debugLayer.isVisible()) {
+      scene.debugLayer.hide();
+    } else {
+      scene.debugLayer.show();
+    }
+  }
+});
