@@ -2,25 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Babylon.js starting template. Vite + JavaScript + JSDoc</title>
-    <style>
-      html, body {
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #babylon-canvas {
-        width: 100%;
-        height: 100%;
-        touch-action: none;
-      }
-    </style>
-    <script type="module" src="/main.js"></script>
+  <title>VR Museum Demo</title>
+  <style>
+    /* Ensure the page uses full viewport */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="babylon-canvas"></canvas>
+  <!-- Main JavaScript for Three.js scene -->
+  <script src="main.js"></script>
 </body>
 </html>
