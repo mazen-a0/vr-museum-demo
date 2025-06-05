@@ -80,6 +80,28 @@ function init() {
 
   const objects = []; // For collision
 
+  function showPopup(title, description) {
+    let popup = document.getElementById('objectPopup');
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.id = 'objectPopup';
+      popup.style.position = 'fixed';
+      popup.style.top = '20px';
+      popup.style.right = '20px';
+      popup.style.width = '300px';
+      popup.style.background = 'rgba(0,0,0,0.85)';
+      popup.style.color = 'white';
+      popup.style.padding = '15px';
+      popup.style.borderRadius = '10px';
+      popup.style.zIndex = 1000;
+      popup.innerHTML = '<h3 id="popupTitle"></h3><p id="popupDescription"></p><button onclick="document.getElementById(\'objectPopup\').style.display = \"none\"">Close</button>';
+      document.body.appendChild(popup);
+    }
+    document.getElementById('popupTitle').textContent = title;
+    document.getElementById('popupDescription').textContent = description;
+    popup.style.display = 'block';
+  }
+
   function loadModel(url, index) {
     const extension = url.split('.').pop().toLowerCase();
     console.log('[Diagnostic] Loading model:', url);
@@ -99,9 +121,9 @@ function init() {
           model.scale.set(1, 1, 1);
 
           if (index === 5) {
-            model.position.set(0, -1, 0); // Make floor align with ground
-            objects.push(model); // for collision
-            controls.getObject().position.y = 1.6; // spawn on floor
+            model.position.set(0, -1, 0);
+            objects.push(model);
+            controls.getObject().position.y = 1.6;
           } else {
             const x = index * 3;
             const z = -5;
@@ -113,6 +135,13 @@ function init() {
             );
             pedestal.position.set(x, -0.15, z);
             scene.add(pedestal);
+
+            if (index === 0) {
+              model.metadata = {
+                title: 'RM7295',
+                description: '3D scan of RM7295 skull with 504k faces (May 12, 2025).'
+              };
+            }
           }
 
           scene.add(model);
@@ -144,6 +173,43 @@ function init() {
   models.forEach((modelPath, index) => {
     loadModel(modelPath, index);
   });
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  
+    renderer.domElement.addEventListener('click', (event) => {
+    console.log('[Click] Click detected');
+    if (!controls.isLocked) {
+        console.log('[Click] Ignored because pointer is not locked');
+        return;
+    }
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    console.log('[Click] Raycast intersect count:', intersects.length);
+
+    if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        console.log('[Click] Intersected object:', obj.name || obj.type);
+
+        while (obj.parent && !obj.metadata && obj !== scene) {
+        obj = obj.parent;
+        }
+
+        if (obj.metadata) {
+        console.log('[Click] Found metadata:', obj.metadata);
+        showPopup(obj.metadata.title, obj.metadata.description);
+        } else {
+        console.log('[Click] No metadata found on clicked object');
+        }
+    } else {
+        console.log('[Click] No intersections found');
+    }
+    });
 
   document.addEventListener('click', () => {
     if (document.hasFocus()) {
@@ -177,7 +243,6 @@ function init() {
       case 'KeyP':
         console.log('Camera position:', controls.getObject().position);
         break;
-      
       case 'ShiftLeft':
       case 'ShiftRight':
         isRunning = true;
